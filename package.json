@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "node dist/main.js",
-    "build": "tsc -p ."
+    "start": "tsc -p . && node dist/main.js"
   },
   "repository": {
     "type": "git",
