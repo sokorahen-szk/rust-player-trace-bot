@@ -1,0 +1,31 @@
+{
+  "name": "rust-player-trace-bot",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "node dist/main.js",
+    "build": "tsc -p ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sokorahen-szk/rust-player-trace-bot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sokorahen-szk/rust-player-trace-bot/issues"
+  },
+  "homepage": "https://github.com/sokorahen-szk/rust-player-trace-bot#readme",
+  "devDependencies": {
+    "eslint": "^8.47.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "node-cache": "^5.1.2",
+    "node-fetch": "^3.3.2"
+  }
+}
