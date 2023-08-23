@@ -6,6 +6,7 @@ import {
   EmbedBuilder,
 } from "discord.js";
 import "dotenv/config";
+import axis from "axios";
 import PlayerRepository, {
   RepositoryConfig,
 } from "./repositories/player_repository";
@@ -39,9 +40,13 @@ client.on(Events.MessageCreate, async (message) => {
     playerConfigs.map(async (playerConfig: PlayerConfig) => {
       let player = playerRepository.get(playerConfig.id);
       if (!player) {
-        const resp = await fetch(
-          `${process.env.BATTLE_METRICS_ENDPOINT}/players/${playerConfig.id}?include=server`
-        ).then((d) => d.json());
+        const resp: any = await axis
+          .get(
+            `${process.env.BATTLE_METRICS_ENDPOINT}/players/${playerConfig.id}?include=server`
+          )
+          .then((d) => {
+            return d.data;
+          });
 
         const convertedPlayer = new Player(
           playerConfig.id,
