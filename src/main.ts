@@ -10,10 +10,12 @@ import axis from "axios";
 import PlayerRepository, {
   RepositoryConfig,
 } from "./repositories/player_repository";
+import BattleMetricsRepository from "./repositories/internal/battle_metrics_repository";
 import { playerConfigs } from "./configs/config";
 import { PlayerConfig } from "./types";
 import Player from "./entities/player";
 import PlayerLoginServer from "./entities/player_login_server";
+import axios from "axios";
 
 const client = new Client({
   intents: [
@@ -24,9 +26,10 @@ const client = new Client({
 });
 
 const config: RepositoryConfig = {
-  ttl: 60,
+  ttl: parseInt(process.env.CACHE_TTL_MINUTES || "60"),
 };
 const playerRepository = new PlayerRepository(config);
+const battleMetricsRepository = new BattleMetricsRepository(axios);
 
 client.on(Events.ClientReady, () => {
   console.log(`start bot ${client.user?.tag}`);
@@ -40,19 +43,26 @@ client.on(Events.MessageCreate, async (message) => {
     playerConfigs.map(async (playerConfig: PlayerConfig) => {
       let player = playerRepository.get(playerConfig.id);
       if (!player) {
-        const resp: any = await axis
-          .get(
-            `${process.env.BATTLE_METRICS_ENDPOINT}/players/${playerConfig.id}?include=server`
-          )
-          .then((d) => {
-            return d.data;
-          });
+        const playerWithLoginServerInfo =
+          await battleMetricsRepository.getPlayerWithLoginServerInfo(
+            playerConfig.id
+          );
+
+        let playerLoginServer: PlayerLoginServer | null = null;
+        if (playerWithLoginServerInfo.loginServerInfo) {
+          playerLoginServer = new PlayerLoginServer(
+            playerWithLoginServerInfo.loginServerInfo?.name,
+            playerWithLoginServerInfo.loginServerInfo?.timePlayed,
+            playerWithLoginServerInfo.loginServerInfo?.host,
+            playerWithLoginServerInfo.loginServerInfo?.port
+          );
+        }
 
         const convertedPlayer = new Player(
           playerConfig.id,
-          resp.data.attributes.name,
+          playerWithLoginServerInfo.playerName,
           playerConfig.name,
-          getPlayerLoginServer(resp.included)
+          playerLoginServer
         );
 
         playerRepository.set(convertedPlayer);
@@ -67,32 +77,20 @@ client.on(Events.MessageCreate, async (message) => {
 
 client.login(process.env.TOKEN || "");
 
-const getPlayerLoginServer = (
-  items: Array<object>
-): PlayerLoginServer | null => {
-  for (let i = 0; i < items.length; i++) {
-    const item: any = items[i];
-    if (item.relationships.game.data.id !== "rust") continue;
-    if (!item.meta.online) continue;
-
-    return new PlayerLoginServer(
-      item.attributes.name,
-      item.meta.timePlayed,
-      item.attributes.ip,
-      item.attributes.port
-    );
-  }
-
-  return null;
-};
-
 const sendEmbedMessage = (
   message: Message<boolean>,
   players: Array<Player>
 ) => {
+  let onlineCount = 0;
+  players.forEach((player) => {
+    if (player.availableLoginServer()) {
+      onlineCount++;
+    }
+  });
+
   const embed = new EmbedBuilder()
     .setColor(0x0099ff)
-    .setTitle("ログイン状況")
+    .setTitle(`ログイン状況 (${onlineCount}/${players.length})`)
     .addFields(
       players.map((player) => {
         return {
