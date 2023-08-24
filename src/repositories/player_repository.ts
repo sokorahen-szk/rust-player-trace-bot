@@ -9,7 +9,7 @@ export interface RepositoryConfig {
 export default class PlayerRepository {
   client: NodeCache;
   public constructor(config: RepositoryConfig) {
-    this.client = new NodeCache({ stdTTL: config.ttl || 60 });
+    this.client = new NodeCache({ stdTTL: config.ttl });
   }
 
   public get(playerId: string): Player | undefined {
